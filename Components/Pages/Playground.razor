@@ -1,0 +1,91 @@
+﻿@page "/playground"
+@using MaIN.Core.Hub
+@using MaIN.Core.Hub.Contexts
+@using MaIN.Domain.Entities
+
+@rendermode InteractiveServer
+
+<h3 class="mb-4">Playground</h3>
+
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Temperature</span>
+	<input type="number" class="form-control" step="0.05" placeholder="0.8" aria-label="Temperature" aria-describedby="basic-addon1"
+		@bind="temperature">
+</div>
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Context Size</span>
+	<input type="number" class="form-control" placeholder="1024" aria-label="Context Size" aria-describedby="basic-addon1" @bind="contextSize">
+</div>
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">SeqMax</span>
+	<input type="number" class="form-control" placeholder="1" aria-label="SeqMax" aria-describedby="basic-addon1" @bind="seqMax">
+</div>
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Max Tokens</span>
+	<input type="number" class="form-control" placeholder="-1" aria-label="Max Tokens" aria-describedby="basic-addon1" @bind="maxTokens">
+</div>
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Top K</span>
+	<input type="number" class="form-control" placeholder="40" aria-label="Top K" aria-describedby="basic-addon1" @bind="topK">
+</div>
+<div class="input-group mb-3">
+	<span class="input-group-text" id="basic-addon1">Top P</span>
+	<input type="number" class="form-control" step="0.05" placeholder="0.9" aria-label="Top P" aria-describedby="basic-addon1" @bind="topP">
+</div>
+
+<div class="form-floating mb-3">
+	<input type="text" class="form-control" @bind="messageToLLM" @bind:event="oninput" @onkeydown="HandleKeyDown" id="floatingInput"
+		placeholder="Tell me about...">
+	<label for="floatingInput">Prompt</label>
+</div>
+
+<button class="btn btn-primary mb-2" @onclick="HandleSubmit">Send</button>
+
+<div class="@displayAttribute d-flex justify-content-center">
+	<div class="spinner-border" role="status">
+		<span class="visually-hidden">Loading...</span>
+	</div>
+</div>
+
+<p>@answerFromLLM</p>
+
+@code {
+	private static float temperature = 0.8f;
+	private static int contextSize = 1024;
+	private static uint seqMax = 1u;
+	private static int maxTokens = -1;
+	private static int topK = 40;
+	private static float topP = 0.9f;
+	private string messageToLLM = "";
+	private string answerFromLLM = "";
+	private string displayAttribute = "d-none";
+	InferenceParams inferenceParams = new InferenceParams()
+	{
+		Temperature = temperature,
+		ContextSize = contextSize,
+		MaxTokens = maxTokens,
+		TopK = topK,
+		TopP = topP,
+		SeqMax = seqMax
+	};
+	private async Task HandleSubmit()
+	{
+		Console.WriteLine($"=== PARAMETERS - Temperature: {temperature} | Context Size: {contextSize} | SeqMax: {seqMax} | Max Tokens: {maxTokens} | TopK: {topK} | TopP: {topP} ===");
+		displayAttribute = "";
+		answerFromLLM = "";
+		var result = await AIHub.Chat().WithModel("gemma3:4b").WithInferenceParams(inferenceParams).WithMessage(messageToLLM).CompleteAsync();
+		displayAttribute = "d-none";
+
+		//messageToLLM = "";
+
+		answerFromLLM = result.Message.Content;
+	}
+
+	private async Task HandleKeyDown(KeyboardEventArgs e)
+	{
+		if (e.Key == "Enter")
+		{
+			await HandleSubmit();
+		}
+	}
+}
