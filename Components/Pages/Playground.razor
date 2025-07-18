@@ -1,7 +1,4 @@
 ﻿@page "/playground"
-@using MaIN.Core.Hub
-@using MaIN.Core.Hub.Contexts
-@using MaIN.Domain.Entities
 
 @rendermode InteractiveServer
 
@@ -75,8 +72,6 @@
 		answerFromLLM = "";
 		var result = await AIHub.Chat().WithModel("gemma3:4b").WithInferenceParams(inferenceParams).WithMessage(messageToLLM).CompleteAsync();
 		displayAttribute = "d-none";
-
-		//messageToLLM = "";
 
 		answerFromLLM = result.Message.Content;
 	}

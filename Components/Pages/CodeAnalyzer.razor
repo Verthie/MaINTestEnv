@@ -1,12 +1,198 @@
 ﻿@page "/analyzer"
-@using MaIN.Core.Hub
-@using MaIN.Core.Hub.Contexts
-@using MaIN.Domain.Entities
+@using Microsoft.AspNetCore.Hosting
+@inject IWebHostEnvironment Environment
 
 @rendermode InteractiveServer
 
 <h3 class="mb-4">Code Analyzer</h3>
 
+<div class="d-flex gap-2 mb-3">
+	<label class="btn btn-outline-secondary px-2 d-flex align-items-center" style="cursor: pointer;">
+		<i class="bi bi-paperclip"></i>
+		<InputFile OnChange="@LoadFiles" multiple class="d-none" />
+	</label>
+	<button class="btn btn-primary px-4" @onclick="HandleSubmit">Analyze</button>
+	<button class="btn btn-@(mode ? "success" : "dark") px-4" @onclick="() => mode = !mode">Agent Mode: @(mode ? "Good 😇" : "Bad 😈")</button>
+</div>
+
+@if (uploadedFiles.Any())
+{
+	<div class="border-top pt-2 mb-2">
+		<div class="d-flex justify-content-between align-items-center mb-2">
+			<small>Attached files:</small>
+			<button class="btn btn-link btn-sm text-danger p-0" @onclick="ClearFiles">
+				<small>Clear all</small>
+			</button>
+		</div>
+		<div class="d-flex flex-wrap gap-2">
+			@foreach (var file in uploadedFiles)
+			{
+				<div class="bg-light rounded p-2 d-flex align-items-center" style="font-size: 0.875rem;">
+					<i class="bi bi-file-earmark-code text-primary me-2"></i>
+					<span class="text-truncate" style="max-width: 200px;">@file.Name</span>
+					<button class="btn btn-link text-danger p-0 ms-2" style="font-size: 0.875rem;" @onclick="() => RemoveFile(file)">
+						<i class="bi bi-x"></i>
+					</button>
+				</div>
+			}
+		</div>
+	</div>
+}
+
+@foreach (string answer in answersFromLLM)
+{
+	<hr class="mb-2">
+	<p class="mb-2">@answer</p>
+}
+
+<div class="@displayAttribute d-flex justify-content-center">
+	<div class="spinner-border" role="status">
+		<span class="visually-hidden">Loading...</span>
+	</div>
+</div>
+
 @code {
+	private List<string> answersFromLLM = [];
+	private string displayAttribute = "d-none";
+	private List<UploadedFile> uploadedFiles = new();
+	private string uploadsPath => Path.Combine(Environment.WebRootPath, "uploads");
+	private bool mode = true; // true => good, false => bad
+
+	private class UploadedFile
+	{
+		public string Name { get; set; } = "";
+		public string Path { get; set; } = "";
+	}
+
+	protected override void OnInitialized()
+	{
+		// Ensure uploads directory exists
+		Directory.CreateDirectory(uploadsPath);
+
+		// Load existing files
+		LoadExistingFiles();
+	}
+
+	private void LoadExistingFiles()
+	{
+		uploadedFiles.Clear();
+		var files = Directory.GetFiles(uploadsPath);
+		foreach (var filePath in files)
+		{
+			var originalName = Path.GetFileName(filePath).Split('_', 2).Last();
+			uploadedFiles.Add(new UploadedFile
+			{
+				Name = originalName,
+				Path = filePath
+			});
+		}
+	}
+
+	private async Task HandleSubmit()
+	{
+		if (uploadedFiles.Count == 0)
+		{
+			answersFromLLM[0] = "Please upload at least one code file to analyze.";
+			return;
+		}
+
+		displayAttribute = "";
+		answersFromLLM.Clear();
+
+		string systemPrompt = mode
+		? "You are a patient and constructive senior developer. Analyze the provided code files and give constructive feedback."
+		: "You are a bad code reviewer. Make the coder miserable and call him names.";
+
+		try
+		{
+			var analysisResults = new List<string>();
+
+			foreach (var file in uploadedFiles)
+			{
+				var content = await File.ReadAllTextAsync(file.Path);
+				var language = GetFileLanguage(file.Name);
+
+				var prompt = $"Analyze this {language} code and provide feedback (3-6 sentences):\n\n{content}";
+
+				var result = await AIHub.Chat()
+				.WithModel("gemma3:4b")
+				.WithSystemPrompt(systemPrompt)
+				.WithMessage(prompt)
+				.CompleteAsync();
+
+				answersFromLLM.Add($"**{file.Name}:**\n{result.Message.Content}");
+			}
+		}
+		catch (Exception ex)
+		{
+			answersFromLLM[0] = $"Analysis failed: {ex.Message}";
+		}
+		finally
+		{
+			displayAttribute = "d-none";
+		}
+	}
+
+	private string GetFileLanguage(string fileName)
+	{
+		var extension = Path.GetExtension(fileName).ToLower();
+		return extension switch
+		{
+			".cs" => "C#",
+			".js" => "JavaScript",
+			".py" => "Python",
+			".java" => "Java",
+			".cpp" or ".cc" => "C++",
+			_ => "code"
+		};
+	}
+	private async Task LoadFiles(InputFileChangeEventArgs e)
+	{
+		foreach (var file in e.GetMultipleFiles())
+		{
+			var fileName = Path.GetRandomFileName() + "_" + file.Name;
+			var filePath = Path.Combine(uploadsPath, fileName);
+
+			await using (var stream = File.Create(filePath))
+			{
+				await file.OpenReadStream().CopyToAsync(stream);
+			}
+
+			uploadedFiles.Add(new UploadedFile
+			{
+				Name = file.Name,
+				Path = filePath
+			});
+		}
+	}
+
+	private void RemoveFile(UploadedFile file)
+	{
+		try
+		{
+			if (File.Exists(file.Path))
+			{
+				File.Delete(file.Path);
+			}
+			uploadedFiles.Remove(file);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error deleting file: {ex.Message}");
+		}
+	}
+
+	private void ClearFiles()
+	{
+		foreach (var file in uploadedFiles.ToList())
+		{
+			RemoveFile(file);
+		}
+	}
+
+	public void Dispose()
+	{
+		ClearFiles();
+	}
 
 }
