@@ -1,0 +1,82 @@
+﻿@page "/roguelike/adventure"
+@using System.Text.Json
+@using Microsoft.AspNetCore.Hosting
+
+@inject IWebHostEnvironment Environment
+
+@rendermode InteractiveServer
+
+<h3 class="mb-4 text-center">@title</h3>
+
+<div class="border rounded p-3 mb-3 bg-light">
+	@foreach (var message in chatHistory)
+	{
+		<div class="mb-3 p-2 rounded bg-light me-5">
+			<strong>Narrator:</strong>
+			<p class="mb-0 mt-2">@message.Content</p>
+		</div>
+	}
+	<button class="btn btn-light @(isLoading ? "" : "d-none")" type="button" disabled>
+		<span class="spinner-grow spinner-grow-sm" aria-hidden="true"></span>
+		<span class="visually-hidden" role="status">Loading...</span>
+	</button>
+</div>
+
+@*:TODO place here the available actions (buttons) that the user will interact with *@
+
+@code {
+	// LLM
+	private string messageToLLM = "";
+
+	// GAME STATES
+	private string title = "Roguelike Adventure";
+
+	// WEB UI
+	private bool isLoading = false;
+
+	List<ChatMessage> chatHistory = new();
+	private ChatContext? chatInstance;
+
+	private class ChatMessage
+	{
+		public string Content { get; set; } = "";
+		public bool IsUser { get; set; }
+	}
+
+	// EVENTS
+	private async Task HandleAction()
+	{
+		if (string.IsNullOrWhiteSpace(messageToLLM))
+			return;
+
+		chatHistory.Add(new ChatMessage { Content = messageToLLM, IsUser = true });
+		var gameMessage = messageToLLM;
+		messageToLLM = "";
+
+		isLoading = true;
+
+		try
+		{
+			if (chatInstance == null)
+			{
+				chatInstance = AIHub.Chat()
+				.WithModel("gemma3:4b");
+			}
+
+			var result = await chatInstance
+			.WithMessage(gameMessage)
+			.CompleteAsync();
+
+			// Add chat response to history
+			chatHistory.Add(new ChatMessage { Content = result.Message.Content, IsUser = false });
+		}
+		catch (Exception ex)
+		{
+			chatHistory.Add(new ChatMessage { Content = $"Error: {ex.Message}", IsUser = false });
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+}

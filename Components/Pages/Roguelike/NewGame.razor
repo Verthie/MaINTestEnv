@@ -1,0 +1,25 @@
+﻿@page "/roguelike/newgame"
+@using MaINTestEnv.Models
+
+@rendermode InteractiveServer
+
+<h3 class="mb-4 text-center">Adventure Setup</h3>
+
+@*:TODO create form for choosing adventure settings *@
+
+@* <div class="d-flex gap-2 mb-2">
+	<input type="text" class="form-control" @bind="gameSettings.CustomPrompt" placeholder="Write your own custom adventure" />
+</div> *@
+
+<ExitToMenuButton Name="Return to Menu" />
+
+@* <div class="d-flex gap-2">
+
+		<button class="btn btn-primary px-4" @onclick="HandleSubmit">Start Adventure</button>
+	</div> *@
+
+@code {
+	[SupplyParameterFromForm]
+	public GameSettings? gameSettings { get; set; }
+
+}

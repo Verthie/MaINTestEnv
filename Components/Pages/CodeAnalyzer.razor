@@ -45,7 +45,7 @@
 	<p class="mb-2">@answer</p>
 }
 
-<div class="@displayAttribute d-flex justify-content-center">
+<div class="@(isLoading ? "" : "d-none") d-flex justify-content-center">
 	<div class="spinner-border" role="status">
 		<span class="visually-hidden">Loading...</span>
 	</div>
@@ -53,7 +53,7 @@
 
 @code {
 	private List<string> answersFromLLM = [];
-	private string displayAttribute = "d-none";
+	private bool isLoading = false;
 	private List<UploadedFile> uploadedFiles = new();
 	private string uploadsPath => Path.Combine(Environment.WebRootPath, "uploads");
 	private bool mode = true; // true => good, false => bad
@@ -92,11 +92,12 @@
 	{
 		if (uploadedFiles.Count == 0)
 		{
-			answersFromLLM[0] = "Please upload at least one code file to analyze.";
+			answersFromLLM.Clear();
+			answersFromLLM.Add("Please upload at least one code file to analyze.");
 			return;
 		}
 
-		displayAttribute = "";
+		isLoading = true;
 		answersFromLLM.Clear();
 
 		string systemPrompt = mode
@@ -129,7 +130,7 @@
 		}
 		finally
 		{
-			displayAttribute = "d-none";
+			isLoading = false;
 		}
 	}
 
@@ -143,7 +144,7 @@
 			".py" => "Python",
 			".java" => "Java",
 			".cpp" or ".cc" => "C++",
-			_ => "code"
+			_ => ""
 		};
 	}
 	private async Task LoadFiles(InputFileChangeEventArgs e)

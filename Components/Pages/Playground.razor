@@ -38,7 +38,7 @@
 
 <button class="btn btn-primary mb-2" @onclick="HandleSubmit">Send</button>
 
-<div class="@displayAttribute d-flex justify-content-center">
+<div class="@(isLoading? "" : "d-none") d-flex justify-content-center">
 	<div class="spinner-border" role="status">
 		<span class="visually-hidden">Loading...</span>
 	</div>
@@ -55,7 +55,7 @@
 	private static float topP = 0.9f;
 	private string messageToLLM = "";
 	private string answerFromLLM = "";
-	private string displayAttribute = "d-none";
+	private bool isLoading = false;
 	InferenceParams inferenceParams = new InferenceParams()
 	{
 		Temperature = temperature,
@@ -68,10 +68,10 @@
 	private async Task HandleSubmit()
 	{
 		Console.WriteLine($"=== PARAMETERS - Temperature: {temperature} | Context Size: {contextSize} | SeqMax: {seqMax} | Max Tokens: {maxTokens} | TopK: {topK} | TopP: {topP} ===");
-		displayAttribute = "";
+		isLoading = true;
 		answerFromLLM = "";
 		var result = await AIHub.Chat().WithModel("gemma3:4b").WithInferenceParams(inferenceParams).WithMessage(messageToLLM).CompleteAsync();
-		displayAttribute = "d-none";
+		isLoading = false;
 
 		answerFromLLM = result.Message.Content;
 	}

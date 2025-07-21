@@ -1,0 +1,14 @@
+﻿@page "/roguelike/loadgame"
+@using MaINTestEnv.Models
+
+@rendermode InteractiveServer
+
+<h3 class="mb-4 text-center">Choose Save</h3>
+
+@*:TODO display the available saves (if they exist) and let the user pick one *@
+
+<ExitToMenuButton Name="Return to Menu" />
+
+@code {
+	private List<Save>? saves;
+}

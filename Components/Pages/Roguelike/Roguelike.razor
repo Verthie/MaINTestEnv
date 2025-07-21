@@ -1,0 +1,21 @@
+﻿@page "/roguelike"
+
+<h3 class="mb-4 text-center">Roguelike Adventure</h3>
+
+@*:TODO make the page more visually appealing *@
+
+<div class="row justify-content-center">
+	<div class="col-2">
+		<div class="row mb-3">
+			<a class="btn btn-primary px-4" href="/roguelike/newgame">New Game</a>
+		</div>
+		<div class="row mb-3">
+			<a class="btn btn-primary px-4" href="/roguelike/loadgame">Load Game</a>
+		</div>
+	</div>
+</div>
+
+@code {
+	// GAME STARTUP
+	private string title = "Roguelike Adventure";
+}
