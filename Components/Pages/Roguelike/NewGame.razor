@@ -8,57 +8,56 @@
 
 <h3 class="mb-4 text-center">Adventure Setup</h3>
 
-@*:TODO create form for choosing adventure settings *@
+<EditForm Model="@gameSettings" OnValidSubmit="HandleConfirmation">
+	<DataAnnotationsValidator />
 
-@if (adventureSettings == null)
-{
-	<p><em>Loading...</em></p>
-}
-else
-{
-	<EditForm Model="@gameSettings" OnValidSubmit="HandleSettingsSubmit">
-		<DataAnnotationsValidator />
-
-		<div class="container">
-			@* <h5 class="mb-4 text-center"></h5> *@
-			<div class="row justify-content-center text-center">
-				<div class="col-3">
-					<div class="mb-3">
-						<label for="playerName" class="form-label">Player Name:</label>
-						<InputText id="playerName" class="form-control" @bind-Value="gameSettings.PlayerName" placeholder="Albert Einstein" />
-						<ValidationMessage For="@(() => gameSettings.PlayerName)" />
-					</div>
-				</div>
-
-				<div class="col-3">
-					<div class="mb-3">
-						<label for="length" class="form-label">Adventure Length:</label>
-						<InputNumber id="length" class="form-control" @bind-Value="gameSettings.AdventureLength" />
-						<ValidationMessage For="@(() => gameSettings.AdventureLength)" />
-					</div>
-				</div>
-			</div>
-			<h5 class="mt-3 mb-3 text-center">@typeTitle</h5>
-
-			@*: TYPE CHOICE BUTTONS *@
-			<div class="row gap-2 justify-content-center mt-3 @(typeChosen ? "d-none" : "")">
-				<div class="col-2">
-					<div class="row mb-3">
-						<button type="button" @onclick="() => DisplayTypeSettings(custom: false)" class="btn btn-success">Predefined Settings</button>
-					</div>
-				</div>
-				<div class="col-2">
-					<div class="row mb-3">
-						<button type="button" @onclick="() => DisplayTypeSettings(custom: true)" class="btn btn-warning">Custom Adventure</button>
-					</div>
+	<div class="container mb-3">
+		@* <h5 class="mb-4 text-center"></h5> *@
+		<div class="row justify-content-center text-center">
+			<div class="col-3">
+				<div class="mb-3">
+					<label for="playerName" class="form-label">Player Name:</label>
+					<InputText id="playerName" class="form-control" @bind-Value="gameSettings.PlayerName" placeholder="Albert" />
+					<ValidationMessage For="@(() => gameSettings.PlayerName)" />
 				</div>
 			</div>
 
-			<div class="@(typeChosen ? "" : "d-none")">
+			<div class="col-3">
+				<div class="mb-3">
+					<label for="length" class="form-label">Adventure Length:</label>
+					<InputNumber id="length" class="form-control" @bind-Value="gameSettings.AdventureLength" />
+					<ValidationMessage For="@(() => gameSettings.AdventureLength)" />
+				</div>
+			</div>
+		</div>
+		<h5 class="mt-3 mb-3 text-center">@typeTitle</h5>
 
-				@*: PREDEFINED OPTIONS *@
-				<div class="row justify-content-center text-center @(isCustom ? "d-none" : "")">
-					<div class="col-4">
+		@*: TYPE CHOICE BUTTONS *@
+		<div class="row gap-2 justify-content-center mt-3 @(typeChosen ? "d-none" : "")">
+			<div class="col-2">
+				<div class="row mb-3">
+					<button type="button" @onclick="() => DisplayTypeSettings(custom: false)" class="btn btn-success">Predefined Settings</button>
+				</div>
+			</div>
+			<div class="col-2">
+				<div class="row mb-3">
+					<button type="button" @onclick="() => DisplayTypeSettings(custom: true)" class="btn btn-warning">Custom Adventure</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="@(typeChosen ? "" : "d-none")">
+
+			@*: PREDEFINED OPTIONS *@
+			<div class="row justify-content-center text-center @(isCustom ? "d-none" : "")">
+
+				@if (adventureSettings == null || gameTypes == null)
+				{
+					<p><em>Loading...</em></p>
+				}
+				else
+				{
+					<div class="col-3">
 						<div class="mb-3">
 							<label for="setting" class="form-label">Adventure Setting:</label>
 							<InputSelect id="setting" class="form-select" @bind-Value="gameSettings.AdventureSetting">
@@ -72,7 +71,7 @@ else
 						</div>
 					</div>
 
-					<div class="col-4">
+					<div class="col-3">
 						<div class="mb-3">
 							<label for="type" class="form-label">Game Type:</label>
 							<InputSelect id="setting" class="form-select" @bind-Value="gameSettings.GameType">
@@ -85,47 +84,72 @@ else
 							<ValidationMessage For="@(() => gameSettings.GameType)" />
 						</div>
 					</div>
+				}
 
-					<div class="row justify-content-center ">
-						<div class="col-2">
-							<div class="row mb-3">
-								<button type="button" @onclick="() => DisplayTypeSettings(custom: true)" class="btn btn-light">Switch Type</button>
-							</div>
+				<div class="row justify-content-center ">
+					<div class="col-2">
+						<div class="row mb-3">
+							<button type="button" @onclick="() => DisplayTypeSettings(custom: true)" class="btn btn-light">Switch Type</button>
 						</div>
-					</div>
-				</div>
-
-				@*: CUSTOM OPTIONS *@
-				<div class="row justify-content-center text-center @(isCustom ? "" : "d-none")">
-					<div class="col-8">
-						<input type="text" class="form-control" @bind="gameSettings.CustomPrompt" placeholder="Write your own custom adventure" />
-					</div>
-
-					<div class="row justify-content-center mt-3">
-						<div class="col-2">
-							<div class="row mb-3">
-								<button type="button" @onclick="() => DisplayTypeSettings(custom: false)" class="btn btn-light">Switch Type</button>
-							</div>
-						</div>
-					</div>
-				</div>
-
-
-			</div>
-
-			<div class="row justify-content-center mt-3">
-				<div class="col-2">
-					<div class="row mb-3">
-						<button type="submit" class="btn btn-primary">Start Adventure</button>
 					</div>
 				</div>
 			</div>
 
-			<ExitToMenuButton Name="Return to Menu" />
+			@*: CUSTOM OPTIONS *@
+			<div class="row justify-content-center text-center @(isCustom ? "" : "d-none")">
+				<div class="col-6">
+					<label for="customPrompt" class="form-label">Prompt:</label>
+					<InputTextArea id="customPrompt" class="form-control" Rows="4" @bind-Value="gameSettings.CustomPrompt"
+						placeholder="Write your own custom adventure" />
+				</div>
+
+				<div class="row justify-content-center mt-3">
+					<div class="col-2">
+						<div class="row mb-3">
+							<button type="button" @onclick="() => DisplayTypeSettings(custom: false)" class="btn btn-light">Switch Type</button>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 
-	</EditForm>
-}
+		<p class="text-danger-emphasis text-center">@missingFieldInfo</p>
+
+		<div class="row justify-content-center mt-3 @(typeChosen ? "" : "d-none")">
+			<div class="col-2">
+				<div class="row">
+					<button type="button" @onclick="() => HandleGenerate(first: true)" data-bs-toggle="modal" data-bs-target="#generateModal"
+						class="btn btn-primary">Generate
+						Adventure</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Modal -->
+		<div class="modal fade" id="generateModal" tabindex="-1" aria-labelledby="generateModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h1 class="modal-title fs-5" id="generateModalLabel">Generated Adventure</h1>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						@*:TODO if (isLoading) { DisplayLoadingSpinner } else { DisplayContent } *@
+					</div>
+					<div class="modal-footer">
+						<button type="submit" class="btn btn-success">OK, Start Adventure!</button>
+						<button type="button" class="btn btn-warning" @onclick="() => HandleGenerate(first: false)">Re-generate</button>
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back to Form</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+	<ExitToMenuButton Name="Return to Menu" />
+
+</EditForm>
+
 
 @code {
 	private AdventureSetting[]? adventureSettings;
@@ -133,13 +157,13 @@ else
 	private string typeTitle = "Adventure Type";
 	private bool typeChosen = false;
 	private bool isCustom = false;
+	private string missingFieldInfo = "";
+	private string generatedAdventure = "";
 
 	[SupplyParameterFromForm]
 	public GameSettings gameSettings { get; set; } = new()
 	{
 		PlayerName = String.Empty,
-		AdventureSetting = String.Empty,
-		GameType = String.Empty,
 	};
 
 	protected override void OnInitialized()
@@ -153,26 +177,37 @@ else
 		isCustom = custom;
 		typeChosen = true;
 		typeTitle = isCustom ? "Custom Adventure" : "Choose Settings";
+		missingFieldInfo = "";
 	}
 
-	private async Task HandleSettingsSubmit()
+	// On Generate or Regenerate button clicked
+	private void HandleGenerate(bool first = true)
 	{
-		@*:TODO Generate the adventure prompt *@
-		@*:TODO Display modal and ask for confirmation: okey button, re-genarate button, edit adventure button *@
+		missingFieldInfo = "";
+
+		if (isCustom && gameSettings.CustomPrompt == "")
+		{
+			missingFieldInfo = "Please provide prompt in order to generate the adventure";
+			return;
+		}
+		else if (!isCustom && (gameSettings.AdventureSetting == "" || gameSettings.GameType == ""))
+		{
+			missingFieldInfo = "Please provide both the setting and type for the adventure";
+			return;
+		}
+
+		@*:TODO Display modal only if there are no missing fields using JSInterop instead of attributes *@
+
+		@*:TODO Generate the adventure prompt and display it in the modal *@
 	}
 
-	private async Task HandleConfirmation()
+	// On OK button clicked
+	private void HandleConfirmation()
 	{
-		@*:? On okey button clicked: Populate the instance of gameSettings with form values *@
-	}
+		@*:TODO Populate the instance of gameSettings with form values *@
 
-	private async Task HandleRegenerate()
-	{
-		@*:? On Re-generate button clicked: Send prompt again (maybe with context, so it doesn't give a simmilar answer) *@
-	}
+		@*:TODO Create a Save instance add to it GameSettings and generatedAdventure then send it to SaveService  *@
 
-	private async Task HandleEdit()
-	{
-		@*:? On Edit button clicked: Go back to form *@
+		@*:? In SaveService create add the newly created Save object to the list of Saves (to database in the future) *@
 	}
 }
