@@ -7,7 +7,14 @@
 
 @*:TODO display the available saves (if they exist) and let the user pick one *@
 
-<ExitToMenuButton Name="Return to Menu" />
+<div class="row d-flex justify-content-center">
+	<div class="col-2">
+		<div class="row mb-3">
+			<ExitToMenuButton Name="Return to Menu" />
+		</div>
+	</div>
+</div>
+
 
 @code {
 	private List<Save>? saves;

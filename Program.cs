@@ -1,11 +1,15 @@
 using MaINTestEnv.Components;
 using MaIN.Core;
+using MaINTestEnv.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddSingleton<AdventureSettingSevice>();
+builder.Services.AddSingleton<GameTypeService>();
+builder.Services.AddSingleton<GameSettingsService>();
 
 builder.Services.AddMaIN(builder.Configuration);
 var app = builder.Build();
