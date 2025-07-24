@@ -9,7 +9,7 @@
 
 <h3 class="mb-4 text-center">Adventure Setup</h3>
 
-<EditForm Model="@gameSettings" OnValidSubmit="HandleConfirmation">
+<EditForm EditContext="@editContext" OnValidSubmit="HandleConfirmation">
 	<DataAnnotationsValidator />
 
 	<div class="container mb-3">
@@ -61,7 +61,7 @@
 					<div class="col-3">
 						<div class="mb-3">
 							<label for="setting" class="form-label">Adventure Setting:</label>
-							<InputSelect id="setting" class="form-select" @bind-Value="gameSettings.AdventureSetting">
+							<InputSelect id="setting" class="form-control" @bind-Value="gameSettings.AdventureSetting">
 								<option value="">Select Adventure Setting</option>
 								@foreach (AdventureSetting setting in adventureSettings)
 								{
@@ -75,7 +75,7 @@
 					<div class="col-3">
 						<div class="mb-3">
 							<label for="type" class="form-label">Game Type:</label>
-							<InputSelect id="setting" class="form-select" @bind-Value="gameSettings.GameType">
+							<InputSelect id="type" class="form-control" @bind-Value="gameSettings.GameType">
 								<option value="">Select Game Type</option>
 								@foreach (GameType type in gameTypes)
 								{
@@ -113,9 +113,6 @@
 				</div>
 			</div>
 		</div>
-
-		@*:! VALIDATION  *@
-		<p class="text-danger-emphasis text-center">@missingFieldInfo</p>
 
 		@*: GENERATE BUTTON *@
 		<div class="row justify-content-center mt-3 @(typeChosen ? "" : "d-none")">
@@ -160,8 +157,9 @@
 	private string typeTitle = "Adventure Type";
 	private bool typeChosen = false;
 	private bool isCustom = false;
-	private string missingFieldInfo = "";
 	private string generatedAdventure = "";
+	private EditContext editContext;
+	private ValidationMessageStore messageStore;
 
 	[SupplyParameterFromForm]
 	public GameSettings gameSettings { get; set; } = new()
@@ -173,6 +171,8 @@
 	{
 		adventureSettings = SettingSevice.GetAdventureSettings();
 		gameTypes = TypeService.GetGameTypes();
+		editContext = new EditContext(gameSettings);
+		messageStore = new ValidationMessageStore(editContext);
 	}
 
 	private void DisplayTypeSettings(bool custom)
@@ -180,15 +180,16 @@
 		isCustom = custom;
 		typeChosen = true;
 		typeTitle = isCustom ? "Custom Adventure" : "Choose Settings";
-		missingFieldInfo = "";
 	}
 
 	// On Generate or Regenerate button clicked
 	private async Task HandleGenerate()
 	{
-		bool validationCheck = CheckFormValidation();
+		messageStore.Clear();
 
-		if (validationCheck == false) return;
+		CheckFormValidation();
+
+		if (!editContext.Validate()) return;
 
 		@*:TODO Display modal only if there are no missing fields using JSInterop instead of attributes *@
 
@@ -208,38 +209,26 @@
 		@*:? In SaveService create add the newly created Save object to the list of Saves (to database in the future) *@
 	}
 
-	private bool CheckFormValidation()
+	private void CheckFormValidation()
 	{
-		missingFieldInfo = "";
-
-		if (string.IsNullOrWhiteSpace(gameSettings.PlayerName))
-		{
-			missingFieldInfo = "Player Name is required\n";
-		}
-
-		if (gameSettings.AdventureLength < 10 || gameSettings.AdventureLength > 100)
-		{
-			missingFieldInfo += "Adventure Length is incorrect\n";
-		}
-
 		if (isCustom && string.IsNullOrWhiteSpace(gameSettings.CustomPrompt))
 		{
-			missingFieldInfo += "Please provide prompt in order to generate the adventure\n";
+			messageStore.Add(new FieldIdentifier(gameSettings, nameof(gameSettings.CustomPrompt)), "Please provide prompt in order to generate the adventure");
 		}
 
-		if (!isCustom && (string.IsNullOrWhiteSpace(gameSettings.AdventureSetting) ||
-		string.IsNullOrWhiteSpace(gameSettings.GameType)))
+		if (!isCustom)
 		{
-			missingFieldInfo += "Please provide both the setting and type for the adventure\n";
+			if (string.IsNullOrWhiteSpace(gameSettings.AdventureSetting))
+			{
+				messageStore.Add(new FieldIdentifier(gameSettings, nameof(gameSettings.AdventureSetting)), "Please provide the adventure setting");
+			}
+
+			if (string.IsNullOrWhiteSpace(gameSettings.GameType))
+			{
+				messageStore.Add(new FieldIdentifier(gameSettings, nameof(gameSettings.GameType)), "Please provide the adventure type");
+			}
 		}
 
-		if (missingFieldInfo == "")
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		editContext.NotifyValidationStateChanged();
 	}
 }
