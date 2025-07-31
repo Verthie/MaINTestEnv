@@ -2,13 +2,45 @@
 @using MaINTestEnv.Models
 
 @rendermode InteractiveServer
+@inject SaveService SaveService
 
 <h3 class="mb-4 text-center">Choose Save</h3>
 
 @*:TODO display the available saves (if they exist) and let the user pick one *@
 
+@if (saves == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<div class="row row-cols-1 row-cols-md-3 g-4">
+		@foreach (Save save in saves)
+		{
+			<div class="col">
+				<div class="card h-100">
+					@* TODO Change the placeholder with an AI generated image *@ 
+					<img src="..." class="card-img-top" alt="...">
+					<div class="card-body">
+						<h5 class="card-title">@save.AdventureName</h5>
+						<p class="card-text">@(save.GeneratedAdventure.Substring(0, 250))...</p>
+						@* TODO Use another agent for giving a brief overview of the adventure so far to place as description on the card and replace the introduction *@
+						@* TODO Add save progress and character information (depending on adventure) to the card *@ 
+					</div>
+					@* TODO Add buttons on cards for choosing or deleting a save *@ 
+				</div>
+			</div>
+		}
+	</div>
+}
+
 <ExitToMenuButton Name="Return to Menu" />
 
 @code {
-	private List<Save>? saves;
+	private Save[]? saves;
+
+	protected override void OnInitialized()
+	{
+		saves = SaveService.GetSaves();
+	}
 }

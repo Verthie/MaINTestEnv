@@ -154,20 +154,17 @@
 					<div class="modal-footer justify-content-center gap-2">
 						@if (String.IsNullOrWhiteSpace(generatedAdventure))
 						{
-						<button type="submit" id="modalbtn-ok" class="btn btn-success" data-bs-toggle="tooltip" data-bs-container="#modalbtn-ok"
-							data-bs-title="OK, Start Adventure!" data-bs-trigger="hover" @onclick="HandleConfirmation" disabled><i class="bi bi-check-lg"></i></button>
-						<button type="button" id="modalbtn-reg" class="btn btn-warning" data-bs-toggle="tooltip" data-bs-container="#modalbtn-reg"
-							data-bs-title="Re-Generate Adventure" data-bs-trigger="hover" @onclick="() => HandleGenerate(true)" disabled><i class="bi bi-arrow-repeat"></i></button>
-						<button type="button" id="modalbtn-back" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-container="#modalbtn-back"
-							data-bs-title="Back to Form" data-bs-trigger="hover" disabled><i class="bi bi-trash"></i></button>
+							<button type="button" class="btn btn-success" disabled><i class="bi bi-check-lg"></i></button>
+							<button type="button" class="btn btn-warning" disabled><i class="bi bi-arrow-repeat"></i></button>
+							<button type="button" class="btn btn-danger" disabled><i class="bi bi-trash"></i></button>
 						}
 						else{
-						<button type="submit" id="modalbtn-ok" class="btn btn-success" data-bs-toggle="tooltip" data-bs-container="#modalbtn-ok"
-							data-bs-title="OK, Start Adventure!" data-bs-trigger="hover" @onclick="HandleConfirmation" data-bs-dismiss="modal"><i class="bi bi-check-lg"></i></button>
-						<button type="button" id="modalbtn-reg" class="btn btn-warning" data-bs-toggle="tooltip" data-bs-container="#modalbtn-reg"
-							data-bs-title="Re-Generate Adventure" data-bs-trigger="hover" @onclick="() => HandleGenerate(true)"><i class="bi bi-arrow-repeat"></i></button>
-						<button type="button" id="modalbtn-back" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-container="#modalbtn-back"
-							data-bs-title="Back to Form" data-bs-trigger="hover" data-bs-dismiss="modal"><i class="bi bi-trash"></i></button>
+							<button type="submit" id="modalbtn-ok" class="btn btn-success" data-bs-toggle="tooltip" data-bs-container="#modalbtn-ok"
+								data-bs-title="OK, Start Adventure!" data-bs-trigger="hover" data-bs-dismiss="modal"><i class="bi bi-check-lg"></i></button>
+							<button type="button" id="modalbtn-reg" class="btn btn-warning" data-bs-toggle="tooltip" data-bs-container="#modalbtn-reg"
+								data-bs-title="Re-Generate Adventure" data-bs-trigger="hover" @onclick="() => HandleGenerate(true)"><i class="bi bi-arrow-repeat"></i></button>
+							<button type="button" id="modalbtn-back" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-container="#modalbtn-back"
+								data-bs-title="Back to Form" data-bs-trigger="hover" data-bs-dismiss="modal"><i class="bi bi-trash"></i></button>
 						}
 					</div>
 				</div>
@@ -288,7 +285,10 @@
 		
 		SaveService.CreateSave(adventureName, generatedAdventure, gameSettings);
 
+		// Switch to the page where gameplay will occur
 		NavManager.NavigateTo("/roguelike/adventure");
+
+		@*:? The next page will have to load the created save and start the adventure *@
 	}
 
 	// Custom validation for adventure setting fields

@@ -9,5 +9,7 @@ public class Save
     public required string GeneratedAdventure { get; set; }
     public required GameSettings GameSettings { get; set; }
 
-    //:TODO Add other properties (e.g. for storing past game events List<string>?, past player choices List<string>?, player state (player class), etc.)
+    //:* IDEA choosing preferred type of input (this would determine whether we use a predetermined set of buttons, text or chat generated options for character actions)
+
+    // TODO Add other properties (e.g. for storing past game events List<string>?, past player choices List<string>?, player state (player class), etc.)
 }
