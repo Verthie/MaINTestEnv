@@ -4,6 +4,8 @@
 @inject IJSRuntime JS
 @inject AdventureSettingSevice SettingSevice
 @inject GameTypeService TypeService
+@inject SaveService SaveService
+@inject NavigationManager NavManager
 
 @rendermode InteractiveServer
 
@@ -50,8 +52,7 @@
 		<div class="@(typeChosen ? "" : "d-none")">
 
 			@*:3 PREDEFINED OPTIONS *@
-			<div class="row justify-content-center text-center @(isCustom ? "d-none" : "")">
-
+			<div class="row justify-content-center text-center @(gameSettings.IsCustom ? "d-none" : "")">
 				@if (adventureSettings == null || gameTypes == null)
 				{
 					<p><em>Loading...</em></p>
@@ -97,7 +98,7 @@
 			</div>
 
 			@*:& CUSTOM OPTIONS *@
-			<div class="row justify-content-center text-center @(isCustom ? "" : "d-none")">
+			<div class="row justify-content-center text-center @(gameSettings.IsCustom ? "" : "d-none")">
 				<div class="col-6 mb-3">
 					<label for="customPrompt" class="form-label">Your own adventure setting:</label>
 					<InputTextArea id="customPrompt" class="form-control" Rows="4" @bind-Value="gameSettings.CustomPrompt"
@@ -119,19 +120,22 @@
 		<div class="row justify-content-center mt-3 @(typeChosen ? "" : "d-none")">
 			<div class="col-2">
 				<div class="row">
-					<button type="button" @onclick="HandleGenerate" class="btn btn-primary">Generate
+					<button type="button" @onclick="() => HandleGenerate()" class="btn btn-primary">Generate
 						Adventure</button>
 				</div>
 			</div>
 		</div>
 
 		@*: MODAL *@
-		<div class="modal fade" id="generateModal" tabindex="-1" aria-labelledby="generateModalLabel" aria-hidden="true">
+		<div class="modal fade" id="generateModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="generateModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-scrollable">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h1 class="modal-title fs-5" id="generateModalLabel">Generated Adventure</h1>
-						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+						<h1 class="modal-title fs-5" id="generateModalLabel">@(String.IsNullOrWhiteSpace(generatedAdventure) ? "Generating Adventure..." : "Generated Adventure")
+						</h1>
+						@if(!String.IsNullOrWhiteSpace(generatedAdventure)){
+							<button type="button" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+						}
 					</div>
 					<div class="modal-body">
 						@if (String.IsNullOrWhiteSpace(generatedAdventure))
@@ -147,15 +151,28 @@
 							<p>@generatedAdventure</p>
 						}
 					</div>
-					<div class="modal-footer">
-						<button type="submit" class="btn btn-success">OK, Start Adventure!</button>
-						<button type="button" class="btn btn-warning" @onclick="HandleGenerate">Re-generate</button>
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Back to Form</button>
+					<div class="modal-footer justify-content-center gap-2">
+						@if (String.IsNullOrWhiteSpace(generatedAdventure))
+						{
+						<button type="submit" id="modalbtn-ok" class="btn btn-success" data-bs-toggle="tooltip" data-bs-container="#modalbtn-ok"
+							data-bs-title="OK, Start Adventure!" data-bs-trigger="hover" @onclick="HandleConfirmation" disabled><i class="bi bi-check-lg"></i></button>
+						<button type="button" id="modalbtn-reg" class="btn btn-warning" data-bs-toggle="tooltip" data-bs-container="#modalbtn-reg"
+							data-bs-title="Re-Generate Adventure" data-bs-trigger="hover" @onclick="() => HandleGenerate(true)" disabled><i class="bi bi-arrow-repeat"></i></button>
+						<button type="button" id="modalbtn-back" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-container="#modalbtn-back"
+							data-bs-title="Back to Form" data-bs-trigger="hover" disabled><i class="bi bi-trash"></i></button>
+						}
+						else{
+						<button type="submit" id="modalbtn-ok" class="btn btn-success" data-bs-toggle="tooltip" data-bs-container="#modalbtn-ok"
+							data-bs-title="OK, Start Adventure!" data-bs-trigger="hover" @onclick="HandleConfirmation" data-bs-dismiss="modal"><i class="bi bi-check-lg"></i></button>
+						<button type="button" id="modalbtn-reg" class="btn btn-warning" data-bs-toggle="tooltip" data-bs-container="#modalbtn-reg"
+							data-bs-title="Re-Generate Adventure" data-bs-trigger="hover" @onclick="() => HandleGenerate(true)"><i class="bi bi-arrow-repeat"></i></button>
+						<button type="button" id="modalbtn-back" class="btn btn-danger" data-bs-toggle="tooltip" data-bs-container="#modalbtn-back"
+							data-bs-title="Back to Form" data-bs-trigger="hover" data-bs-dismiss="modal"><i class="bi bi-trash"></i></button>
+						}
 					</div>
 				</div>
 			</div>
 		</div>
-
 	</div>
 
 	<ExitToMenuButton Name="Return to Menu" />
@@ -169,10 +186,9 @@
 
 	private string typeTitle = "Adventure Type";
 	private bool typeChosen = false;
-	private bool isCustom = false;
 	private string generatedAdventure = "";
-	private string systemPrompt = "";
 	private string prompt = "";
+	private string adventureName = "";
 
 	private ChatContext? chatInstance;
 	private EditContext? editContext;
@@ -192,15 +208,21 @@
 		messageStore = new ValidationMessageStore(editContext);
 	}
 
+	protected override async Task OnAfterRenderAsync(bool firstRender){
+		await JS.InvokeVoidAsync("bootstrapInterop.enableTooltips"); // tooltips for modal buttons
+	}
+
+	// Display custom or predefined adventure settings fields	
 	private void DisplayTypeSettings(bool custom)
 	{
-		isCustom = custom;
+		gameSettings.IsCustom = custom;
 		typeChosen = true;
-		typeTitle = isCustom ? "Custom Adventure" : "Choose Settings";
+		typeTitle = gameSettings.IsCustom ? "Custom Adventure" : "Choose Settings";
+		chatInstance = AIHub.Chat().WithModel("gemma3:4b");
 	}
 
 	// On Generate or Regenerate button clicked
-	private async Task HandleGenerate()
+	private async Task HandleGenerate(bool isRegeneration = false)
 	{
 		ArgumentNullException.ThrowIfNull(messageStore);
 		ArgumentNullException.ThrowIfNull(editContext);
@@ -209,29 +231,35 @@
 
 		CheckFormValidation();
 
+		// Checking if there are any messages about invalid fields
 		if (!editContext.Validate()) return;
 
-		// Check if we there was a prior adventure generation in the modal
-		if (String.IsNullOrEmpty(generatedAdventure))
+		// Checking if there was prior adventure generation
+		if(String.IsNullOrWhiteSpace(generatedAdventure))
 		{
-			// Open modal only when validation passes
-			await JS.InvokeVoidAsync("bootstrapInterop.showModal", "#generateModal"); @* TODO Fix: modal not displaying after returning back to form and clicking generate, because generatedAdventure now has a value *@ 
-
-			prompt = "You are an RPG GameMaster that specializes in creating interesting worlds for his players. Create a brief introduction for an adventure with the given parameters. Nothing else.";
+			prompt = "You are an RPG GameMaster that specializes in creating interesting worlds for his players. Create a brief introduction (max 6 sentences) for an adventure with the given parameters. Write only the introduction, nothing else.";
 		}
 		else {
 			prompt = "Create a brief introduction for an adventure that is different from the previous one with these parameters. Nothing else.";
 		}
 
-		generatedAdventure = "";
-
-		if (isCustom)
+		// Checking adventure setting type
+		if (gameSettings.IsCustom)
 		{
 			prompt += $" Player Name: {gameSettings.PlayerName}, Adventure Setting: {gameSettings.CustomPrompt}";
 		}
 		else
 		{
 			prompt += $" Player Name: {gameSettings.PlayerName}, Adventure Setting: {gameSettings.AdventureSetting}, Genre: {gameSettings.GameType}";
+		}
+
+		generatedAdventure = "";
+
+		// Check if we there was a prior adventure generation in the modal
+		if (!isRegeneration)
+		{
+			// Displaying modal
+			await JS.InvokeVoidAsync("bootstrapInterop.showModal", "#generateModal"); 
 		}
 
 		try
@@ -241,6 +269,8 @@
 			}
 
 			var result = await chatInstance.WithMessage(prompt).CompleteAsync();
+
+			@* TODO Create another agent that comes up with the name for the adventure and then display it in the modal (as title) along with the description *@
 
 			generatedAdventure = result.Message.Content;
 		}
@@ -254,24 +284,25 @@
 	// On OK button clicked
 	private void HandleConfirmation()
 	{
-		@*:TODO Populate the instance of gameSettings with form values *@
+		ArgumentNullException.ThrowIfNull(gameSettings);
+		
+		SaveService.CreateSave(adventureName, generatedAdventure, gameSettings);
 
-		@*:TODO Create a Save instance add to it GameSettings and generatedAdventure then send it to SaveService  *@
-
-		@*:? In SaveService create add the newly created Save object to the list of Saves (to database in the future) *@
+		NavManager.NavigateTo("/roguelike/adventure");
 	}
 
+	// Custom validation for adventure setting fields
 	private void CheckFormValidation()
 	{
 		ArgumentNullException.ThrowIfNull(messageStore);
 		ArgumentNullException.ThrowIfNull(editContext);
 
-		if (isCustom && string.IsNullOrWhiteSpace(gameSettings.CustomPrompt))
+		if (gameSettings.IsCustom && string.IsNullOrWhiteSpace(gameSettings.CustomPrompt))
 		{
 			messageStore.Add(new FieldIdentifier(gameSettings, nameof(gameSettings.CustomPrompt)), "Please provide prompt in order to generate the adventure");
 		}
 
-		if (!isCustom)
+		if (!gameSettings.IsCustom)
 		{
 			if (string.IsNullOrWhiteSpace(gameSettings.AdventureSetting))
 			{

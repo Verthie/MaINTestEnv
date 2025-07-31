@@ -6,9 +6,26 @@ namespace MaINTestEnv.Services;
 
 public class SaveService
 {
-	private List<Save>? saves;
+	private readonly List<Save> saves = [];
 
-	//:TODO Retrieve, Add and Delete Functionality
+	public Save[]? GetSaves() => saves.ToArray();
+	public void CreateSave(string adventureName, string generatedAdventure, GameSettings gameSettings)
+	{
+		Save save = new()
+		{
+			Id = Guid.NewGuid(),
+			AdventureName = adventureName,
+			GeneratedAdventure = generatedAdventure,
+			GameSettings = gameSettings
+		};
 
-	private Save[]? GetSaves() => saves.IsNullOrEmpty() ? null : saves!.ToArray();
+		saves.Add(save);
+	}
+
+	public void DeleteSave(Guid id)
+	{
+		Save save = saves.Find(s => s.Id == id) ?? throw new ArgumentNullException("Game not found");
+
+		saves.Remove(save);
+	}
 }

@@ -9,7 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddSingleton<AdventureSettingSevice>();
 builder.Services.AddSingleton<GameTypeService>();
-builder.Services.AddSingleton<GameSettingsService>();
+builder.Services.AddSingleton<SaveService>();
 
 builder.Services.AddMaIN(builder.Configuration);
 var app = builder.Build();
